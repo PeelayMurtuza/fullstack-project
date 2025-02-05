@@ -9,14 +9,14 @@ export class UserRepository extends DefaultCrudRepository<
   typeof User.prototype.id,
   UserRelations
 > {
-
   public readonly orders: HasManyRepositoryFactory<Order, typeof User.prototype.id>;
 
   constructor(
-    @inject('datasources.mysql') dataSource: MysqlDataSource, @repository.getter('OrderRepository') protected orderRepositoryGetter: Getter<OrderRepository>,
+    @inject('datasources.mysql') dataSource: MysqlDataSource,
+    @repository.getter('OrderRepository') protected orderRepositoryGetter: Getter<OrderRepository>,
   ) {
     super(User, dataSource);
-    this.orders = this.createHasManyRepositoryFactoryFor('orders', orderRepositoryGetter,);
+    this.orders = this.createHasManyRepositoryFactoryFor('orders', orderRepositoryGetter);
     this.registerInclusionResolver('orders', this.orders.inclusionResolver);
   }
 }

@@ -1,4 +1,5 @@
 import {ApplicationConfig, BackendApplication} from './application';
+import 'reflect-metadata';
 
 export * from './application';
 

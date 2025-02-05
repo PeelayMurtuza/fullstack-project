@@ -19,14 +19,18 @@ import {
 } from '@loopback/rest';
 import {User} from '../models';
 import {UserRepository} from '../repositories';
+import {authenticate} from '@loopback/authentication';
+import {authorize} from '@loopback/authorization';
 
 export class UserController {
   constructor(
     @repository(UserRepository)
-    public userRepository : UserRepository,
+    public userRepository: UserRepository,
   ) {}
 
   @post('/users')
+  @authenticate('jwt') // Require authentication
+  @authorize({allowedRoles: ['admin']}) // Only admins can create users
   @response(200, {
     description: 'User model instance',
     content: {'application/json': {schema: getModelSchemaRef(User)}},
@@ -48,17 +52,19 @@ export class UserController {
   }
 
   @get('/users/count')
+  @authenticate('jwt')
+  @authorize({allowedRoles: ['admin']}) // Only admins can count users
   @response(200, {
     description: 'User model count',
     content: {'application/json': {schema: CountSchema}},
   })
-  async count(
-    @param.where(User) where?: Where<User>,
-  ): Promise<Count> {
+  async count(@param.where(User) where?: Where<User>): Promise<Count> {
     return this.userRepository.count(where);
   }
 
   @get('/users')
+  @authenticate('jwt')
+  @authorize({allowedRoles: ['admin']}) // Only admins can list users
   @response(200, {
     description: 'Array of User model instances',
     content: {
@@ -70,32 +76,13 @@ export class UserController {
       },
     },
   })
-  async find(
-    @param.filter(User) filter?: Filter<User>,
-  ): Promise<User[]> {
+  async find(@param.filter(User) filter?: Filter<User>): Promise<User[]> {
     return this.userRepository.find(filter);
   }
 
-  @patch('/users')
-  @response(200, {
-    description: 'User PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(User, {partial: true}),
-        },
-      },
-    })
-    user: User,
-    @param.where(User) where?: Where<User>,
-  ): Promise<Count> {
-    return this.userRepository.updateAll(user, where);
-  }
-
   @get('/users/{id}')
+  @authenticate('jwt')
+  @authorize({allowedRoles: ['admin', 'user']}) // Admins & users can view their profile
   @response(200, {
     description: 'User model instance',
     content: {
@@ -106,12 +93,14 @@ export class UserController {
   })
   async findById(
     @param.path.number('id') id: number,
-    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>
+    @param.filter(User, {exclude: 'where'}) filter?: FilterExcludingWhere<User>,
   ): Promise<User> {
     return this.userRepository.findById(id, filter);
   }
 
   @patch('/users/{id}')
+  @authenticate('jwt')
+  @authorize({allowedRoles: ['admin', 'user']}) // Admins & users can update their profile
   @response(204, {
     description: 'User PATCH success',
   })
@@ -130,17 +119,18 @@ export class UserController {
   }
 
   @put('/users/{id}')
+  @authenticate('jwt')
+  @authorize({allowedRoles: ['admin']}) // Only admins can replace user profiles
   @response(204, {
     description: 'User PUT success',
   })
-  async replaceById(
-    @param.path.number('id') id: number,
-    @requestBody() user: User,
-  ): Promise<void> {
+  async replaceById(@param.path.number('id') id: number, @requestBody() user: User): Promise<void> {
     await this.userRepository.replaceById(id, user);
   }
 
   @del('/users/{id}')
+  @authenticate('jwt')
+  @authorize({allowedRoles: ['admin']}) // Only admins can delete users
   @response(204, {
     description: 'User DELETE success',
   })

@@ -38,4 +38,21 @@ export class JwtService {
       throw new HttpErrors.Unauthorized('Invalid or expired token');
     }
   }
+
+  // Get current user from token
+  async getCurrentUser(token: string): Promise<User> {
+    const secretKey = process.env.JWT_SECRET;  // Directly access the environment variable
+    if (!secretKey) {
+      throw new Error('JWT secret is not defined in environment variables');  // Error if it's not defined
+    }
+
+    try {
+      // Verify the token and extract user info
+      const decoded = jwt.verify(token, secretKey) as {id: number; email: string; role: string};
+      return {id: decoded.id, email: decoded.email, role: decoded.role} as User;
+    } catch (error) {
+      // If verification fails, throw an Unauthorized error
+      throw new HttpErrors.Unauthorized('Invalid or expired token');
+    }
+  }
 }

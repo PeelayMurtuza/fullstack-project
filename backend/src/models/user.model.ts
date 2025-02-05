@@ -1,5 +1,10 @@
-import { Entity, model, property, hasMany} from '@loopback/repository';
+import {Entity, model, property, hasMany} from '@loopback/repository';
 import {Order} from './order.model';
+
+export enum UserRole {
+  USER = 'user',
+  ADMIN = 'admin',
+}
 
 @model()
 export class User extends Entity {
@@ -25,8 +30,11 @@ export class User extends Entity {
   @property({
     type: 'string',
     required: true,
+    jsonSchema: {
+      enum: Object.values(UserRole),
+    },
   })
-  role: string;
+  role: UserRole;
 
   @hasMany(() => Order)
   orders: Order[];

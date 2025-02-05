@@ -19,14 +19,17 @@ import {
 } from '@loopback/rest';
 import {Order} from '../models';
 import {OrderRepository} from '../repositories';
+import {authenticate} from '@loopback/authentication';
+import {authorize} from '@loopback/authorization';
 
 export class OrderController {
   constructor(
     @repository(OrderRepository)
-    public orderRepository : OrderRepository,
+    public orderRepository: OrderRepository,
   ) {}
 
   @post('/orders')
+  @authenticate('jwt') // Require authentication
   @response(200, {
     description: 'Order model instance',
     content: {'application/json': {schema: getModelSchemaRef(Order)}},
@@ -48,17 +51,19 @@ export class OrderController {
   }
 
   @get('/orders/count')
+  @authenticate('jwt')
+  @authorize({allowedRoles: ['admin']}) // Only admins can count orders
   @response(200, {
     description: 'Order model count',
     content: {'application/json': {schema: CountSchema}},
   })
-  async count(
-    @param.where(Order) where?: Where<Order>,
-  ): Promise<Count> {
+  async count(@param.where(Order) where?: Where<Order>): Promise<Count> {
     return this.orderRepository.count(where);
   }
 
   @get('/orders')
+  @authenticate('jwt')
+  @authorize({allowedRoles: ['admin']}) // Only admins can view all orders
   @response(200, {
     description: 'Array of Order model instances',
     content: {
@@ -70,32 +75,12 @@ export class OrderController {
       },
     },
   })
-  async find(
-    @param.filter(Order) filter?: Filter<Order>,
-  ): Promise<Order[]> {
+  async find(@param.filter(Order) filter?: Filter<Order>): Promise<Order[]> {
     return this.orderRepository.find(filter);
   }
 
-  @patch('/orders')
-  @response(200, {
-    description: 'Order PATCH success count',
-    content: {'application/json': {schema: CountSchema}},
-  })
-  async updateAll(
-    @requestBody({
-      content: {
-        'application/json': {
-          schema: getModelSchemaRef(Order, {partial: true}),
-        },
-      },
-    })
-    order: Order,
-    @param.where(Order) where?: Where<Order>,
-  ): Promise<Count> {
-    return this.orderRepository.updateAll(order, where);
-  }
-
   @get('/orders/{id}')
+  @authenticate('jwt')
   @response(200, {
     description: 'Order model instance',
     content: {
@@ -106,12 +91,14 @@ export class OrderController {
   })
   async findById(
     @param.path.number('id') id: number,
-    @param.filter(Order, {exclude: 'where'}) filter?: FilterExcludingWhere<Order>
+    @param.filter(Order, {exclude: 'where'}) filter?: FilterExcludingWhere<Order>,
   ): Promise<Order> {
     return this.orderRepository.findById(id, filter);
   }
 
   @patch('/orders/{id}')
+  @authenticate('jwt')
+  @authorize({allowedRoles: ['admin']}) // Only admins can update orders
   @response(204, {
     description: 'Order PATCH success',
   })
@@ -130,17 +117,18 @@ export class OrderController {
   }
 
   @put('/orders/{id}')
+  @authenticate('jwt')
+  @authorize({allowedRoles: ['admin']}) // Only admins can replace orders
   @response(204, {
     description: 'Order PUT success',
   })
-  async replaceById(
-    @param.path.number('id') id: number,
-    @requestBody() order: Order,
-  ): Promise<void> {
+  async replaceById(@param.path.number('id') id: number, @requestBody() order: Order): Promise<void> {
     await this.orderRepository.replaceById(id, order);
   }
 
   @del('/orders/{id}')
+  @authenticate('jwt')
+  @authorize({allowedRoles: ['admin']}) // Only admins can delete orders
   @response(204, {
     description: 'Order DELETE success',
   })

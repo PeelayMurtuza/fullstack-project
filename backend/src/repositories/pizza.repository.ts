@@ -1,22 +1,22 @@
-import {inject, Getter} from '@loopback/core';
-import {DefaultCrudRepository, repository, BelongsToAccessor} from '@loopback/repository';
-import {MysqlDataSource} from '../datasources';
-import {Pizza, PizzaRelations, Admin} from '../models';
-import {AdminRepository} from './admin.repository';
+import { inject, Getter } from '@loopback/core';
+import { DefaultCrudRepository, repository, BelongsToAccessor } from '@loopback/repository';
+import { MysqlDataSource } from '../datasources';
+import { Pizza, PizzaRelations, User } from '../models';
+import { UserRepository } from './user.repository';
 
 export class PizzaRepository extends DefaultCrudRepository<
   Pizza,
   typeof Pizza.prototype.id,
   PizzaRelations
 > {
-
-  public readonly admin: BelongsToAccessor<Admin, typeof Pizza.prototype.id>;
+  public readonly user: BelongsToAccessor<User, typeof Pizza.prototype.id>;
 
   constructor(
-    @inject('datasources.mysql') dataSource: MysqlDataSource, @repository.getter('AdminRepository') protected adminRepositoryGetter: Getter<AdminRepository>,
+    @inject('datasources.mysql') dataSource: MysqlDataSource,
+    @repository.getter('UserRepository') protected userRepositoryGetter: Getter<UserRepository>,
   ) {
     super(Pizza, dataSource);
-    this.admin = this.createBelongsToAccessorFor('admin', adminRepositoryGetter,);
-    this.registerInclusionResolver('admin', this.admin.inclusionResolver);
+    this.user = this.createBelongsToAccessorFor('userId', userRepositoryGetter);
+    this.registerInclusionResolver('user', this.user.inclusionResolver);
   }
 }

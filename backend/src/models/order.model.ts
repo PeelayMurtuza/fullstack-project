@@ -28,10 +28,11 @@ export class Order extends Entity {
     required: true,
   })
   status: string;
-  @belongsTo(() => User)
+
+  @belongsTo(() => User, {name: 'userId'})
   userId: number;
 
-  @belongsTo(() => Pizza)
+  @belongsTo(() => Pizza, {name: 'pizzaId'})
   pizzaId: number;
 
   constructor(data?: Partial<Order>) {

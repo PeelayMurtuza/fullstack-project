@@ -3,13 +3,14 @@ import { UserRepository } from '../repositories';
 import { User, UserRole } from '../models';
 import { post, requestBody, HttpErrors } from '@loopback/rest';
 import * as bcrypt from 'bcryptjs';
-import { JwtService } from '../services/jwt-service.service';
+import { JWTService } from '../services/jwt-service';
 import { service } from '@loopback/core';
+import { UserProfile, securityId } from '@loopback/security';
 
 export class AuthController {
   constructor(
     @repository(UserRepository) public userRepository: UserRepository,
-    @service(JwtService) public jwtService: JwtService,
+    @service(JWTService) public jwtService: JWTService,
   ) {}
 
   // SignUp - Register a new user with role assignment
@@ -45,7 +46,8 @@ export class AuthController {
     newUser.role = newUser.role || UserRole.USER;
 
     // Save new user to the database
-    return this.userRepository.create(newUser);
+    const createdUser = await this.userRepository.create(newUser);
+    return createdUser;
   }
 
   // Login - Authenticate user and return JWT token with role
@@ -75,8 +77,22 @@ export class AuthController {
     const passwordMatches = await bcrypt.compare(credentials.password, user.password);
     if (!passwordMatches) throw new HttpErrors.Unauthorized('Invalid email or password');
 
+    // Check if user.id and user.name are defined before accessing them
+    if (!user.id ) {
+      throw new HttpErrors.Unauthorized('User data is incomplete');
+    }
+
+    // Manually create a UserProfile object, adding the missing securityId
+    const userProfile: UserProfile = {
+      [securityId]: user.id.toString(),
+
+      id: user.id.toString(),
+      role: user.role,
+      email: user.email,
+    };
+
     // Generate and return JWT token with role
-    const token = await this.jwtService.generateToken(user);
+    const token = await this.jwtService.generateToken(userProfile);
     return { token, role: user.role, isAdmin: user.role === UserRole.ADMIN };
   }
 }

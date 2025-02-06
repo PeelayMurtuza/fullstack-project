@@ -29,7 +29,7 @@ export class OrderController {
   ) {}
 
   @post('/orders')
-  @authenticate('jwt') // Require authentication
+  @authenticate('jwt') 
   @response(200, {
     description: 'Order model instance',
     content: {'application/json': {schema: getModelSchemaRef(Order)}},
@@ -63,7 +63,7 @@ export class OrderController {
 
   @get('/orders')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['admin']}) // Only admins can view all orders
+  @authorize({allowedRoles: ['admin']}) 
   @response(200, {
     description: 'Array of Order model instances',
     content: {
@@ -98,7 +98,7 @@ export class OrderController {
 
   @patch('/orders/{id}')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['admin']}) // Only admins can update orders
+  @authorize({allowedRoles: ['admin']}) 
   @response(204, {
     description: 'Order PATCH success',
   })
@@ -118,7 +118,7 @@ export class OrderController {
 
   @put('/orders/{id}')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['admin']}) // Only admins can replace orders
+  @authorize({allowedRoles: ['admin']}) 
   @response(204, {
     description: 'Order PUT success',
   })
@@ -128,7 +128,7 @@ export class OrderController {
 
   @del('/orders/{id}')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['admin']}) // Only admins can delete orders
+  @authorize({allowedRoles: ['admin']}) 
   @response(204, {
     description: 'Order DELETE success',
   })

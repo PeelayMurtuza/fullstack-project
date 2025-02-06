@@ -16,6 +16,7 @@ import {
   del,
   requestBody,
   response,
+  HttpErrors,
 } from '@loopback/rest';
 import {Pizza} from '../models';
 import {PizzaRepository} from '../repositories';
@@ -23,6 +24,8 @@ import {authenticate} from '@loopback/authentication';
 import {authorize} from '@loopback/authorization';
 import {User} from '../models'; // Import the User model
 import {inject} from '@loopback/core'; // Correct import for inject
+import {AuthenticationBindings} from '@loopback/authentication';
+import {UserProfile} from '@loopback/security';
 
 export class PizzaController {
   constructor(
@@ -31,8 +34,8 @@ export class PizzaController {
   ) {}
 
   @post('/pizzas')
-  @authenticate('jwt') // Require authentication
-  @authorize({allowedRoles: ['admin']}) // Only admins can add pizzas
+  @authenticate('jwt') 
+  @authorize({allowedRoles: ['admin']}) 
   @response(200, {
     description: 'Pizza model instance',
     content: {'application/json': {schema: getModelSchemaRef(Pizza)}},
@@ -49,14 +52,13 @@ export class PizzaController {
       },
     })
     pizza: Omit<Pizza, 'id'>,
-    @inject('authentication.currentUser') currentUser: User, // Inject currentUser from authentication context
+    @inject(AuthenticationBindings.CURRENT_USER) currentUser: UserProfile,
   ): Promise<Pizza> {
-    if (!currentUser.id) {
-      throw new Error('User ID is required to associate the pizza.');
+    // Ensure that the user has a valid ID from the JWT token
+    if (!currentUser || !currentUser.id) {
+      throw new HttpErrors.Unauthorized('User ID is required to associate the pizza.');
     }
 
-    // Ensure userId is set to the authenticated user's id (TypeScript knows currentUser.id is defined now)
-    pizza.userId = currentUser.id; // Associate the userId (admin) here
     return this.pizzaRepository.create(pizza);
   }
 

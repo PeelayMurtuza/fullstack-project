@@ -1,5 +1,4 @@
-import {Entity, model, property, belongsTo} from '@loopback/repository';
-import { User } from './user.model';
+import {Entity, model, property} from '@loopback/repository';
 
 @model()
 export class Pizza extends Entity {
@@ -39,10 +38,6 @@ export class Pizza extends Entity {
     required: true,
   })
   imageUrl: string;
-
-  // Ensure foreign key is correctly specified in @belongsTo
-  @belongsTo(() => User, {name: 'userId'})
-  userId: number;  // Foreign key for the User (admin) model
 
   constructor(data?: Partial<Pizza>) {
     super(data);

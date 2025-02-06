@@ -8,5 +8,5 @@ export const enum PermissionKeys {
   AccessAuthFeature = 'AccessAuthFeature',
   ViewProfile = 'ViewProfile',
   EditProfile = 'EditProfile',
-  // Add more permissions as needed
+  
 }

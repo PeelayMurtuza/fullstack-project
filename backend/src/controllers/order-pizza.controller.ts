@@ -9,6 +9,7 @@ import {Order, Pizza} from '../models';
 import {OrderRepository, PizzaRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 import {authorize} from '@loopback/authorization';
+import {UserRole} from '../models/user.model';
 
 export class OrderPizzaController {
   constructor(
@@ -32,7 +33,7 @@ export class OrderPizzaController {
     },
   })
   @authenticate('jwt') // Require JWT authentication
-  @authorize({allowedRoles: ['admin', 'user']}) // Allow both admins & users
+  @authorize({allowedRoles: [UserRole.ADMIN , UserRole.USER]}) // Allow both admins & users
   async getPizza(
     @param.path.number('id') id: typeof Order.prototype.id, // Order ID from the path
   ): Promise<Pizza> {

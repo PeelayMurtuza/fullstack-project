@@ -21,6 +21,7 @@ import {Order} from '../models';
 import {OrderRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 import {authorize} from '@loopback/authorization';
+import {UserRole} from '../models/user.model';
 
 export class OrderController {
   constructor(
@@ -52,7 +53,7 @@ export class OrderController {
 
   @get('/orders/count')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['admin']}) // Only admins can count orders
+  @authorize({allowedRoles: [UserRole.ADMIN]}) // Only admins can count orders
   @response(200, {
     description: 'Order model count',
     content: {'application/json': {schema: CountSchema}},
@@ -63,7 +64,7 @@ export class OrderController {
 
   @get('/orders')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['admin']}) 
+  @authorize({allowedRoles: [UserRole.ADMIN]}) 
   @response(200, {
     description: 'Array of Order model instances',
     content: {
@@ -98,7 +99,7 @@ export class OrderController {
 
   @patch('/orders/{id}')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['admin']}) 
+  @authorize({allowedRoles: [UserRole.ADMIN]}) 
   @response(204, {
     description: 'Order PATCH success',
   })
@@ -118,7 +119,7 @@ export class OrderController {
 
   @put('/orders/{id}')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['admin']}) 
+  @authorize({allowedRoles: [UserRole.ADMIN]}) 
   @response(204, {
     description: 'Order PUT success',
   })
@@ -128,7 +129,7 @@ export class OrderController {
 
   @del('/orders/{id}')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['admin']}) 
+  @authorize({allowedRoles: [UserRole.ADMIN]}) 
   @response(204, {
     description: 'Order DELETE success',
   })

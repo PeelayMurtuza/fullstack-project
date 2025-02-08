@@ -1,86 +1,32 @@
-import {
-  AuthenticationBindings,
-  AuthenticationMetadata,
-} from '@loopback/authentication';
-import {
-  Getter,
-  globalInterceptor,
-  inject,
-  Interceptor,
-  InvocationContext,
-  InvocationResult,
-  Provider,
-  ValueOrPromise,
-} from '@loopback/context';
-import {HttpErrors} from '@loopback/rest';
-import {intersection} from 'lodash';
-import {MyUserProfile, RequiredPermissions} from '../types';
+import {Provider, inject, Setter} from '@loopback/core';
+import {AuthorizationContext, AuthorizationDecision, AuthorizationMetadata, Authorizer} from '@loopback/authorization';
+import {AuthenticationBindings} from '@loopback/authentication';
+import {UserProfile} from '@loopback/security';
 
-/**
- * This class will be bound to the application as an `Interceptor` during
- * `boot`
- */
-@globalInterceptor('', {tags: {name: 'authorize'}})
-export class AuthorizeInterceptor implements Provider<Interceptor> {
+export class RoleAuthorizationProvider implements Provider<Authorizer> {
   constructor(
-    @inject(AuthenticationBindings.METADATA)
-    public metadata: AuthenticationMetadata,
-
-    // dependency inject
-    @inject.getter(AuthenticationBindings.CURRENT_USER)
-    public getCurrentUser: Getter<MyUserProfile>,
+    @inject.setter(AuthenticationBindings.CURRENT_USER)
+    private readonly getCurrentUser: Setter<UserProfile>,
   ) {}
 
-  /**
-   * This method is used by LoopBack context to produce an interceptor function
-   * for the binding.
-   *
-   * @returns An interceptor function
-   */
-  value() {
-    return this.intercept.bind(this);
-  }
-
-  /**
-   * The logic to intercept an invocation
-   * @param invocationCtx - Invocation context
-   * @param next - A function to invoke next interceptor or the target method
-   */
-  async intercept(
-    invocationCtx: InvocationContext,
-    next: () => ValueOrPromise<InvocationResult>,
-  ) {
-    try {
-      // Check if metadata exists, otherwise continue
-      if (!this.metadata || !this.metadata.options) return next();
-
-      const requiredPermissions = this.metadata.options as RequiredPermissions;
-
-      // Get the current user
-      const user = await this.getCurrentUser();
-
-      // Check if user has permissions array and it's defined
-      if (!user || !user.permissions) {
-        throw new HttpErrors.Unauthorized('User does not have permissions');
+  value(): Authorizer {
+    return async (context: AuthorizationContext, metadata: AuthorizationMetadata) => {
+      const user = await context.invocationContext.get<UserProfile | undefined>(AuthenticationBindings.CURRENT_USER);
+      if (!user) {
+        return AuthorizationDecision.DENY;
       }
 
-      // Check if the user has the required permissions
-      const hasPermission = intersection(
-        user.permissions,
-        requiredPermissions.required,
-      ).length === requiredPermissions.required.length;
-
-      if (!hasPermission) {
-        throw new HttpErrors.Forbidden('Access denied due to missing permissions');
+      //Check if required roles exist in metadata
+      if (!metadata.allowedRoles || metadata.allowedRoles.length === 0) {
+        return AuthorizationDecision.ALLOW;
       }
 
-      // Proceed with the request
-      const result = await next();
-      return result;
-    } catch (err) {
-      // Log error for debugging
-      console.error('Authorization error:', err);
-      throw err;
-    }
+      //Compare user role with allowed roles
+      if (metadata.allowedRoles.includes(user.role)) {
+        return AuthorizationDecision.ALLOW;
+      }
+
+      return AuthorizationDecision.DENY;
+    };
   }
 }

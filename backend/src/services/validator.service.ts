@@ -23,5 +23,13 @@ export class User extends Entity {
   })
   password: string;
 
-  
+  @property({
+    type: 'string',
+    required: true,
+    jsonSchema: {
+      enum: ['admin', 'user'], // Restrict values to 'admin' or 'user'
+      errorMessage: 'Role must be either "admin" or "user"',
+    },
+  })
+  role: string;
 }

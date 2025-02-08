@@ -20,10 +20,10 @@ export class JWTService {
     }
 
     try {
-      // Include role in the token payload
+   
       const tokenPayload = {
         ...userProfile,
-        role: userProfile.role,  // Ensure role is included in the token
+        role: userProfile.role,  //  role is included in the token
       };
 
       const token = await signAsync(tokenPayload, this.jwtSecret, {
@@ -49,7 +49,7 @@ export class JWTService {
         id: decryptedToken.id,
         name: decryptedToken.name,
         permissions: decryptedToken.permissions,
-        role: decryptedToken.role,  // Include role from token
+        role: decryptedToken.roles,  
       };
 
       return userProfile;

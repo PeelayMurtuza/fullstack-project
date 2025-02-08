@@ -6,26 +6,35 @@ import {ServiceMixin} from '@loopback/service-proxy';
 import {JWTStrategy} from './authentication-stratgies/jwt-stratgies';
 import {AuthenticationComponent, registerAuthenticationStrategy} from '@loopback/authentication';
 import {SECURITY_SCHEME_SPEC, UserRepository} from '@loopback/authentication-jwt';
-import {OPERATION_SECURITY_SPEC} from './utils/security-spec'; // Import the newly defined security spec
+import {OPERATION_SECURITY_SPEC} from './utils/security-spec';
 import path from 'path';
-import {PasswordHasherBindings, TokenServiceBindings, TokenServiceConstants, UserServiceBindings} from './keys';
+import {
+  PasswordHasherBindings,
+  TokenServiceBindings,
+  UserServiceBindings
+} from './keys';
 import {MySequence} from './sequence';
 import {BcryptHasher} from './services/hash.password';
 import {JWTService} from './services/jwt-service';
 import {MyUserService} from './services/user-service';
-import { RestExplorerBindings, RestExplorerComponent } from '@loopback/rest-explorer';
+import {RestExplorerBindings, RestExplorerComponent} from '@loopback/rest-explorer';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {CurrentUserProvider} from './services/current-user.provider';
 import {Pizza} from './models/pizza.model';
 import {User} from './models/user.model';
-import { OrderRepository, PizzaRepository } from './repositories';
-import { Order } from './models/order.model';
+import {OrderRepository, PizzaRepository} from './repositories';
+import {Order} from './models/order.model';
+import dotenv from 'dotenv';
+
 export {ApplicationConfig};
 
 export class BackendApplication extends BootMixin(ServiceMixin(RepositoryMixin(RestApplication))) {
   constructor(options: ApplicationConfig = {}) {
     super(options);
     
+    // Load environment variables
+    dotenv.config();
+
     this.model(Pizza);
     this.model(User);
     this.model(Order);
@@ -33,6 +42,7 @@ export class BackendApplication extends BootMixin(ServiceMixin(RepositoryMixin(R
     this.repository(UserRepository);
     this.repository(OrderRepository);
     this.repository(PizzaRepository);
+
     // Setup bindings
     this.setupBindings();
 
@@ -69,20 +79,18 @@ export class BackendApplication extends BootMixin(ServiceMixin(RepositoryMixin(R
   }
 
   setupBindings(): void {
-    // Bind password hasher and rounds
-    this.bind(PasswordHasherBindings.PASSWORD_HASHER).toClass(BcryptHasher);
-    this.bind(PasswordHasherBindings.ROUNDS).to(10);
-
-    // Bind user service
-    this.bind(UserServiceBindings.USER_SERVICE).toClass(MyUserService);
-
-    // Bind JWT service and configurations
+    const jwtSecret = process.env.JWT_SECRET;
+    const jwtExpiresIn = process.env.JWT_EXPIRES_IN;
+  
+    if (!jwtSecret || !jwtExpiresIn) {
+      throw new Error('JWT_SECRET or JWT_EXPIRES_IN is not defined in the environment variables.');
+    }
+  
     this.bind(TokenServiceBindings.TOKEN_SERVICE).toClass(JWTService);
-    this.bind(TokenServiceBindings.TOKEN_SECRET).to(TokenServiceConstants.TOKEN_SECRET_VALUE);
-    this.bind(TokenServiceBindings.TOKEN_EXPIRES_IN).to(TokenServiceConstants.TOKEN_EXPIRES_IN_VALUE);
-    this.component(AuthenticationComponent);
-    this.bind('providers.CurrentUser').toClass(CurrentUserProvider);
+    this.bind(TokenServiceBindings.TOKEN_SECRET).to(jwtSecret);
+    this.bind(TokenServiceBindings.TOKEN_EXPIRES_IN).to(jwtExpiresIn);
   }
+  
 
   addSecuritySpec(): void {
     this.api({

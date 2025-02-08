@@ -1,45 +1,45 @@
-import {AuthenticationStrategy} from '@loopback/authentication';
 import {inject} from '@loopback/core';
-import {HttpErrors} from '@loopback/rest';
-import {UserProfile} from '@loopback/security';
-import {Request} from 'express';
+import {AuthenticationStrategy} from '@loopback/authentication';
 import {TokenServiceBindings} from '../keys';
-import {JWTService} from '../services/jwt-service';
+import {TokenService} from '@loopback/authentication';
+import {Request, HttpErrors} from '@loopback/rest';
+import {UserProfile} from '@loopback/security';
 
 export class JWTStrategy implements AuthenticationStrategy {
   name = 'jwt';
 
   constructor(
     @inject(TokenServiceBindings.TOKEN_SERVICE)
-    public jwtService: JWTService,
+    public tokenService: TokenService,
   ) {}
 
-  async authenticate(request: Request): Promise<UserProfile> {
-    const token: string = this.extractCredentials(request);
-    const userProfile = await this.jwtService.verifyToken(token);
+  async authenticate(request: Request): Promise<UserProfile | undefined> {
+    const token = this.extractToken(request);
 
-    // Ensure role information is passed correctly
-    if (!userProfile || !userProfile.role) {
-      throw new HttpErrors.Unauthorized('User role missing in token');
+    if (!token) {
+      throw new HttpErrors.Unauthorized('JWT token is missing');
+    }
+
+    const userProfile = await this.tokenService.verifyToken(token);
+
+    if (!userProfile.roles) {
+      throw new HttpErrors.Forbidden('User role is missing');
     }
 
     return userProfile;
   }
 
-  extractCredentials(request: Request): string {
-    const authHeaderValue = request.headers.authorization;
-    if (!authHeaderValue) {
+  extractToken(request: Request): string {
+    const authHeader = request.headers.authorization;
+    if (!authHeader) {
       throw new HttpErrors.Unauthorized('Authorization header is missing');
     }
 
-    // Expected format: Bearer <token>
-    const parts = authHeaderValue.split(' ');
-    if (parts.length !== 2 || parts[0] !== 'Bearer') {
-      throw new HttpErrors.Unauthorized(
-        "Authorization header format must be 'Bearer <token>'",
-      );
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0].toLowerCase() !== 'bearer') {
+      throw new HttpErrors.Unauthorized('Authorization header must be in the format: Bearer <token>');
     }
 
-    return parts[1]; // Return the JWT token
+    return parts[1]; // Return the extracted JWT token
   }
 }

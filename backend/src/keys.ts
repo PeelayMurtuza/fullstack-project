@@ -25,5 +25,5 @@ export namespace UserServiceBindings {
 }
 
 export namespace RoleBindings {
-  export const USER_ROLE = BindingKey.create<string>('authentication.user.role'); // Added role binding
+  export const USER_ROLE = BindingKey.create<string>('authentication.user.role'); 
 }

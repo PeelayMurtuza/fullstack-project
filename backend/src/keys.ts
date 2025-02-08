@@ -2,11 +2,11 @@ import {BindingKey} from '@loopback/core';
 import {TokenService, UserService} from '@loopback/authentication';
 import {User} from './models';
 import {PasswordHasher} from './services/hash.password';
-import { Credentials } from '@loopback/authentication-jwt';
+import {Credentials} from '@loopback/authentication-jwt';
 
 export namespace TokenServiceConstants {
-  export const TOKEN_SECRET_VALUE = 'abcdefghijklmnopqrstuvwxyz1234567890!@#$%^&*()_+'; 
-  export const TOKEN_EXPIRES_IN_VALUE = '7h';
+  export const TOKEN_SECRET_VALUE = process.env.JWT_SECRET; 
+  export const TOKEN_EXPIRES_IN_VALUE =process.env.JWT_EXPIRES_IN; 
 }
 
 export namespace TokenServiceBindings {
@@ -22,4 +22,8 @@ export namespace PasswordHasherBindings {
 
 export namespace UserServiceBindings {
   export const USER_SERVICE = BindingKey.create<UserService<Credentials, User>>('services.user.service');
+}
+
+export namespace RoleBindings {
+  export const USER_ROLE = BindingKey.create<string>('authentication.user.role'); // Added role binding
 }

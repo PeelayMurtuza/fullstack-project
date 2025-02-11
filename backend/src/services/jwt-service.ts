@@ -3,16 +3,26 @@ import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
 import {promisify} from 'util';
 import {TokenServiceBindings} from '../keys';
+
 const jwt = require('jsonwebtoken');
 const signAsync = promisify(jwt.sign);
 const verifyAsync = promisify(jwt.verify);
 
 export class JWTService {
-  @inject(TokenServiceBindings.TOKEN_SECRET)
-  public readonly jwtSecret: string;
+  constructor(
+    @inject(TokenServiceBindings.TOKEN_SECRET)
+    private jwtSecret: string,
 
-  @inject(TokenServiceBindings.TOKEN_EXPIRES_IN)
-  public readonly expiresSecret: string;
+    @inject(TokenServiceBindings.TOKEN_EXPIRES_IN)
+    private expiresSecret: string
+  ) {
+    if (!this.jwtSecret) {
+      throw new HttpErrors.Unauthorized('JWT secret is missing. Please check your bindings.');
+    }
+    if (!this.expiresSecret) {
+      throw new HttpErrors.Unauthorized('Token expiration time is missing. Please check your bindings.');
+    }
+  }
 
   async generateToken(userProfile: UserProfile): Promise<string> {
     if (!userProfile) {
@@ -20,10 +30,11 @@ export class JWTService {
     }
 
     try {
-   
       const tokenPayload = {
-        ...userProfile,
-        role: userProfile.role,  //  role is included in the token
+        [securityId]: userProfile[securityId] || userProfile.id,
+        id: userProfile.id,
+        name: userProfile.name,
+        role: userProfile.role, // ✅ Ensure role is included
       };
 
       const token = await signAsync(tokenPayload, this.jwtSecret, {
@@ -44,12 +55,15 @@ export class JWTService {
     try {
       const decryptedToken = await verifyAsync(token, this.jwtSecret);
 
+      if (!decryptedToken.role) {
+        throw new HttpErrors.Forbidden('Access denied: User role is missing');
+      }
+
       const userProfile: UserProfile = {
         [securityId]: decryptedToken.id,
         id: decryptedToken.id,
         name: decryptedToken.name,
-        permissions: decryptedToken.permissions,
-        role: decryptedToken.roles,  
+        role: decryptedToken.role, // ✅ Ensure role is returned
       };
 
       return userProfile;

@@ -1,12 +1,13 @@
-import {UserProfile} from '@loopback/security';
-import {PermissionKeys} from './authorization/permission-keys';
-
-export interface RequiredPermissions {
-  required: PermissionKeys[];
-}
+import { UserProfile } from '@loopback/security';
+import { UserRole } from '../src/models';
 
 export interface MyUserProfile extends UserProfile {
-  permissions: PermissionKeys[];
+  role: UserRole; // Now using role instead of permissions
   email?: string;
-  name: string;  
+  name: string;
 }
+
+export const RolePermissions: Record<UserRole, string[]> = {
+  [UserRole.USER]: ['USER'],
+  [UserRole.ADMIN]: ['ADMIN'],
+};

@@ -1,3 +1,9 @@
+import dotenv from 'dotenv';
+dotenv.config(); // Load environment variables before anything else
+
+import {AuthorizationComponent} from '@loopback/authorization';
+import {AuthorizationBindings, RoleBindings} from './keys';
+import {RoleAuthorizationProvider} from './interceptors/authorize.interceptor';
 import {ApplicationConfig} from '@loopback/core';
 import {BootMixin} from '@loopback/boot';
 import {RepositoryMixin} from '@loopback/repository';
@@ -9,31 +15,22 @@ import {SECURITY_SCHEME_SPEC, UserRepository} from '@loopback/authentication-jwt
 import {OPERATION_SECURITY_SPEC} from './utils/security-spec';
 import path from 'path';
 import {
-  PasswordHasherBindings,
   TokenServiceBindings,
-  UserServiceBindings
 } from './keys';
 import {MySequence} from './sequence';
-import {BcryptHasher} from './services/hash.password';
 import {JWTService} from './services/jwt-service';
 import {MyUserService} from './services/user-service';
 import {RestExplorerBindings, RestExplorerComponent} from '@loopback/rest-explorer';
-import {AuthenticationBindings} from '@loopback/authentication';
-import {CurrentUserProvider} from './services/current-user.provider';
 import {Pizza} from './models/pizza.model';
 import {User} from './models/user.model';
 import {OrderRepository, PizzaRepository} from './repositories';
 import {Order} from './models/order.model';
-import dotenv from 'dotenv';
 
 export {ApplicationConfig};
 
 export class BackendApplication extends BootMixin(ServiceMixin(RepositoryMixin(RestApplication))) {
   constructor(options: ApplicationConfig = {}) {
     super(options);
-    
-    // Load environment variables
-    dotenv.config();
 
     this.model(Pizza);
     this.model(User);
@@ -49,8 +46,9 @@ export class BackendApplication extends BootMixin(ServiceMixin(RepositoryMixin(R
     // Add security specification
     this.addSecuritySpec();
 
-    // Register authentication component and strategy
+    // Register authentication & authorization components
     this.component(AuthenticationComponent);
+    this.component(AuthorizationComponent); // ✅ Register Authorization Component
     registerAuthenticationStrategy(this, JWTStrategy);
 
     // Set up the custom sequence
@@ -81,16 +79,20 @@ export class BackendApplication extends BootMixin(ServiceMixin(RepositoryMixin(R
   setupBindings(): void {
     const jwtSecret = process.env.JWT_SECRET;
     const jwtExpiresIn = process.env.JWT_EXPIRES_IN;
-  
+
     if (!jwtSecret || !jwtExpiresIn) {
       throw new Error('JWT_SECRET or JWT_EXPIRES_IN is not defined in the environment variables.');
     }
-  
+
     this.bind(TokenServiceBindings.TOKEN_SERVICE).toClass(JWTService);
     this.bind(TokenServiceBindings.TOKEN_SECRET).to(jwtSecret);
     this.bind(TokenServiceBindings.TOKEN_EXPIRES_IN).to(jwtExpiresIn);
+
+    // ✅ Bind Role-Based Authorization Provider with the custom binding
+    this.bind('authorizationProviders.RoleAuthorizationProvider').toProvider(RoleAuthorizationProvider);
+
+
   }
-  
 
   addSecuritySpec(): void {
     this.api({

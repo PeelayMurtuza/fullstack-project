@@ -1,32 +1,18 @@
-import {Provider, inject, Setter} from '@loopback/core';
-import {AuthorizationContext, AuthorizationDecision, AuthorizationMetadata, Authorizer} from '@loopback/authorization';
-import {AuthenticationBindings} from '@loopback/authentication';
-import {UserProfile} from '@loopback/security';
+import {Provider, inject} from '@loopback/core';
+import {RoleAuthorizerFn} from '../keys'; // Ensure correct import
 
-export class RoleAuthorizationProvider implements Provider<Authorizer> {
-  constructor(
-    @inject.setter(AuthenticationBindings.CURRENT_USER)
-    private readonly getCurrentUser: Setter<UserProfile>,
-  ) {}
+export class RoleAuthorizationProvider implements Provider<RoleAuthorizerFn> {
+  constructor() {}
 
-  value(): Authorizer {
-    return async (context: AuthorizationContext, metadata: AuthorizationMetadata) => {
-      const user = await context.invocationContext.get<UserProfile | undefined>(AuthenticationBindings.CURRENT_USER);
-      if (!user) {
-        return AuthorizationDecision.DENY;
+  value(): RoleAuthorizerFn {
+    return async (userRole: string | undefined, allowedRoles: string[]): Promise<boolean> => {
+      if (!userRole) {
+        console.warn('⚠️ User role is undefined, denying access.');
+        return false;
       }
 
-      //Check if required roles exist in metadata
-      if (!metadata.allowedRoles || metadata.allowedRoles.length === 0) {
-        return AuthorizationDecision.ALLOW;
-      }
-
-      //Compare user role with allowed roles
-      if (metadata.allowedRoles.includes(user.role)) {
-        return AuthorizationDecision.ALLOW;
-      }
-
-      return AuthorizationDecision.DENY;
+      console.log(`🔍 Checking Role: ${userRole} against Allowed Roles: ${allowedRoles}`);
+      return allowedRoles.includes(userRole);
     };
   }
 }

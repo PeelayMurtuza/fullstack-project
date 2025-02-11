@@ -3,7 +3,7 @@ import {AuthenticationStrategy} from '@loopback/authentication';
 import {TokenServiceBindings} from '../keys';
 import {TokenService} from '@loopback/authentication';
 import {Request, HttpErrors} from '@loopback/rest';
-import {UserProfile} from '@loopback/security';
+import {securityId, UserProfile} from '@loopback/security';
 
 export class JWTStrategy implements AuthenticationStrategy {
   name = 'jwt';
@@ -13,7 +13,7 @@ export class JWTStrategy implements AuthenticationStrategy {
     public tokenService: TokenService,
   ) {}
 
-  async authenticate(request: Request): Promise<UserProfile | undefined> {
+  async authenticate(request: Request): Promise<UserProfile> {
     const token = this.extractToken(request);
 
     if (!token) {
@@ -22,9 +22,12 @@ export class JWTStrategy implements AuthenticationStrategy {
 
     const userProfile = await this.tokenService.verifyToken(token);
 
-    if (!userProfile.roles) {
-      throw new HttpErrors.Forbidden('User role is missing');
+    if (!userProfile.role) {
+      throw new HttpErrors.Forbidden('Access denied: No role provided in token');
     }
+
+    // Ensure roles are stored as an array
+    userProfile.roles = Array.isArray(userProfile.role) ? userProfile.role : [userProfile.role];
 
     return userProfile;
   }
@@ -40,6 +43,6 @@ export class JWTStrategy implements AuthenticationStrategy {
       throw new HttpErrors.Unauthorized('Authorization header must be in the format: Bearer <token>');
     }
 
-    return parts[1]; // Return the extracted JWT token
+    return parts[1]; // Extract JWT token
   }
 }

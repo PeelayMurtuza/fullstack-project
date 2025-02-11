@@ -3,7 +3,7 @@ import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
 import {HttpErrors} from '@loopback/rest';
 import {securityId, UserProfile} from '@loopback/security';
-import {PasswordHasherBindings, RoleBindings} from '../keys'; // Import RoleBindings
+import {PasswordHasherBindings} from '../keys'; // Removed RoleBindings import
 import {User} from '../models';
 import {UserRepository} from '../repositories/user.repository';
 import {BcryptHasher} from './hash.password';
@@ -20,9 +20,6 @@ export class MyUserService implements UserService<User, Credentials> {
 
     @inject(PasswordHasherBindings.PASSWORD_HASHER)
     public hasher: BcryptHasher,
-
-    @inject(RoleBindings.USER_ROLE) // Inject the role binding
-    private userRole: string,
   ) {}
 
   async verifyCredentials(credentials: Credentials): Promise<User> {
@@ -55,7 +52,7 @@ export class MyUserService implements UserService<User, Credentials> {
       [securityId]: user.id!.toString(),
       id: user.id,
       email: user.email,
-      role: this.userRole || user.role, 
+      role: user.role, // ✅ Use the role from the user model
     };
   }
 }

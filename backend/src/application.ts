@@ -1,9 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config(); // Load environment variables before anything else
-
 import {AuthorizationComponent} from '@loopback/authorization';
-import {AuthorizationBindings, RoleBindings} from './keys';
-import {RoleAuthorizationProvider} from './interceptors/authorize.interceptor';
+import {AuthorizationBindings} from './keys';
 import {ApplicationConfig} from '@loopback/core';
 import {BootMixin} from '@loopback/boot';
 import {RepositoryMixin} from '@loopback/repository';
@@ -19,7 +17,6 @@ import {
 } from './keys';
 import {MySequence} from './sequence';
 import {JWTService} from './services/jwt-service';
-import {MyUserService} from './services/user-service';
 import {RestExplorerBindings, RestExplorerComponent} from '@loopback/rest-explorer';
 import {Pizza} from './models/pizza.model';
 import {User} from './models/user.model';
@@ -48,7 +45,7 @@ export class BackendApplication extends BootMixin(ServiceMixin(RepositoryMixin(R
 
     // Register authentication & authorization components
     this.component(AuthenticationComponent);
-    this.component(AuthorizationComponent); // ✅ Register Authorization Component
+    this.component(AuthorizationComponent); // Register Authorization Component
     registerAuthenticationStrategy(this, JWTStrategy);
 
     // Set up the custom sequence
@@ -88,10 +85,10 @@ export class BackendApplication extends BootMixin(ServiceMixin(RepositoryMixin(R
     this.bind(TokenServiceBindings.TOKEN_SECRET).to(jwtSecret);
     this.bind(TokenServiceBindings.TOKEN_EXPIRES_IN).to(jwtExpiresIn);
 
-    // ✅ Bind Role-Based Authorization Provider with the custom binding
-    this.bind('authorizationProviders.RoleAuthorizationProvider').toProvider(RoleAuthorizationProvider);
-
-
+    this.bind(AuthorizationBindings.CONFIG).toDynamicValue(() => ({
+      allowAlwaysPaths: ['/explorer'],
+    }));
+    
   }
 
   addSecuritySpec(): void {

@@ -1,18 +1,26 @@
-import {Provider, inject} from '@loopback/core';
-import {RoleAuthorizerFn} from '../keys'; // Ensure correct import
+import { AuthorizationContext, AuthorizationMetadata, AuthorizationDecision } from "@loopback/authorization";
+import { UserProfile, securityId } from "@loopback/security";
+import _ from "lodash";
 
-export class RoleAuthorizationProvider implements Provider<RoleAuthorizerFn> {
-  constructor() {}
-
-  value(): RoleAuthorizerFn {
-    return async (userRole: string | undefined, allowedRoles: string[]): Promise<boolean> => {
-      if (!userRole) {
-        console.warn('⚠️ User role is undefined, denying access.');
-        return false;
-      }
-
-      console.log(`🔍 Checking Role: ${userRole} against Allowed Roles: ${allowedRoles}`);
-      return allowedRoles.includes(userRole);
-    };
+export async function basicAuthorization(
+  authorizationCtx: AuthorizationContext,
+  metadata: AuthorizationMetadata,
+): Promise<AuthorizationDecision> {
+  let currentUser: UserProfile;
+  if (authorizationCtx.principals.length > 0) {
+    const user = _.pick(authorizationCtx.principals[0], ['id', 'name', 'role']);
+    currentUser = { [securityId]: user.id, name: user.name, role: user.role };
+  } else {
+    return AuthorizationDecision.DENY;
   }
+  if (!currentUser.role) {
+    return AuthorizationDecision.DENY;
+  }
+  if (!metadata.allowedRoles) {
+    return AuthorizationDecision.ALLOW;
+  }
+  if (metadata.allowedRoles.includes(currentUser.role)) {
+    return AuthorizationDecision.ALLOW;
+  }
+  return AuthorizationDecision.DENY;
 }

@@ -21,6 +21,8 @@ import {Order} from '../models';
 import {OrderRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 import {authorize} from '@loopback/authorization';
+import {basicAuthorization} from '../interceptors/authorize.interceptor';
+import {UserRole} from '../models'; 
 
 export class OrderController {
   constructor(
@@ -29,8 +31,8 @@ export class OrderController {
   ) {}
 
   @post('/orders')
-  @authenticate('jwt') // Require authentication
-  @authorize({allowedRoles: ['user']}) // Only users can place an order
+  @authenticate('jwt')
+  @authorize({allowedRoles: [UserRole.USER], voters: [basicAuthorization]}) // Only users can place an order
   @response(200, {
     description: 'Order model instance',
     content: {'application/json': {schema: getModelSchemaRef(Order)}},
@@ -53,7 +55,7 @@ export class OrderController {
 
   @get('/orders/count')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['admin']}) // Only admins can count orders
+  @authorize({allowedRoles: [UserRole.ADMIN], voters: [basicAuthorization]}) // Only admins can count orders
   @response(200, {
     description: 'Order model count',
     content: {'application/json': {schema: CountSchema}},
@@ -64,7 +66,7 @@ export class OrderController {
 
   @get('/orders')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['admin']}) // Only admins can list orders
+  @authorize({allowedRoles: [UserRole.ADMIN], voters: [basicAuthorization]}) // Only admins can list orders
   @response(200, {
     description: 'Array of Order model instances',
     content: {
@@ -82,7 +84,7 @@ export class OrderController {
 
   @get('/orders/{id}')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['admin', 'user']}) // Admins & users can view their orders
+  @authorize({allowedRoles: [UserRole.ADMIN, UserRole.USER], voters: [basicAuthorization]}) // Users can view their own orders, admins can view all
   @response(200, {
     description: 'Order model instance',
     content: {
@@ -100,7 +102,7 @@ export class OrderController {
 
   @get('/users/{userId}/orders')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['user', 'admin']}) // Admins & users can view orders by user
+  @authorize({allowedRoles: [UserRole.ADMIN, UserRole.USER], voters: [basicAuthorization]}) // Users can see their own orders, admins can view all
   @response(200, {
     description: 'Array of Order model instances by user',
     content: {
@@ -124,7 +126,7 @@ export class OrderController {
 
   @patch('/orders/{id}')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['admin', 'user']}) // Admins & users can update their orders
+  @authorize({allowedRoles: [UserRole.ADMIN, UserRole.USER], voters: [basicAuthorization]}) // Users can update their own orders, admins can update all
   @response(204, {
     description: 'Order PATCH success',
   })
@@ -144,7 +146,7 @@ export class OrderController {
 
   @put('/orders/{id}')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['admin']}) // Only admins can replace orders
+  @authorize({allowedRoles: [UserRole.ADMIN], voters: [basicAuthorization]}) // Only admins can replace orders
   @response(204, {
     description: 'Order PUT success',
   })
@@ -154,7 +156,7 @@ export class OrderController {
 
   @del('/orders/{id}')
   @authenticate('jwt')
-  @authorize({allowedRoles: ['admin']}) // Only admins can delete orders
+  @authorize({allowedRoles: [UserRole.ADMIN], voters: [basicAuthorization]}) // Only admins can delete orders
   @response(204, {
     description: 'Order DELETE success',
   })

@@ -26,6 +26,7 @@ import {inject} from '@loopback/core';
 import {AuthenticationBindings} from '@loopback/authentication';
 import {UserProfile} from '@loopback/security';
 import {UserRole} from '../models/user.model';
+import {basicAuthorization} from '../interceptors/authorize.interceptor'; // Import your custom authorization function
 
 export class PizzaController {
   constructor(
@@ -33,10 +34,9 @@ export class PizzaController {
     public pizzaRepository: PizzaRepository,
   ) {}
 
- 
   @post('/pizzas')
   @authenticate('jwt') 
-  @authorize({allowedRoles: [UserRole.ADMIN]}) 
+  @authorize({allowedRoles: [UserRole.ADMIN], voters: [basicAuthorization]}) 
   @response(200, {
     description: 'Pizza model instance',
     content: {'application/json': {schema: getModelSchemaRef(Pizza)}},
@@ -61,10 +61,9 @@ export class PizzaController {
     return this.pizzaRepository.create(pizza);
   }
 
-  /** ✅ Admin-Only Access */
   @get('/pizzas/count')
   @authenticate('jwt')
-  @authorize({allowedRoles: [UserRole.ADMIN]}) 
+  @authorize({allowedRoles: [UserRole.ADMIN], voters: [basicAuthorization]}) 
   @response(200, {
     description: 'Pizza model count',
     content: {'application/json': {schema: CountSchema}},
@@ -73,10 +72,9 @@ export class PizzaController {
     return this.pizzaRepository.count(where);
   }
 
-  /** ✅ Admin & User Both Can Access */
   @get('/pizzas')
   @authenticate('jwt')
-  @authorize({allowedRoles: [UserRole.ADMIN, UserRole.USER]}) 
+  @authorize({allowedRoles: [UserRole.ADMIN, UserRole.USER], voters: [basicAuthorization]}) 
   @response(200, {
     description: 'Array of Pizza model instances',
     content: {
@@ -92,10 +90,9 @@ export class PizzaController {
     return this.pizzaRepository.find(filter);
   }
 
-  /** ✅ Admin & User Both Can Access */
   @get('/pizzas/{id}')
   @authenticate('jwt')
-  @authorize({allowedRoles: [UserRole.ADMIN, UserRole.USER]}) 
+  @authorize({allowedRoles: [UserRole.ADMIN, UserRole.USER], voters: [basicAuthorization]}) 
   @response(200, {
     description: 'Pizza model instance',
     content: {
@@ -111,10 +108,9 @@ export class PizzaController {
     return this.pizzaRepository.findById(id, filter);
   }
 
-  /** ✅ Admin-Only Access */
   @patch('/pizzas/{id}')
   @authenticate('jwt')
-  @authorize({allowedRoles: [UserRole.ADMIN]}) 
+  @authorize({allowedRoles: [UserRole.ADMIN], voters: [basicAuthorization]}) 
   @response(204, {
     description: 'Pizza PATCH success',
   })
@@ -132,10 +128,9 @@ export class PizzaController {
     await this.pizzaRepository.updateById(id, pizza);
   }
 
-  /** ✅ Admin-Only Access */
   @put('/pizzas/{id}')
   @authenticate('jwt')
-  @authorize({allowedRoles: [UserRole.ADMIN]}) 
+  @authorize({allowedRoles: [UserRole.ADMIN], voters: [basicAuthorization]}) 
   @response(204, {
     description: 'Pizza PUT success',
   })
@@ -143,10 +138,9 @@ export class PizzaController {
     await this.pizzaRepository.replaceById(id, pizza);
   }
 
-  /** ✅ Admin-Only Access */
   @del('/pizzas/{id}')
   @authenticate('jwt')
-  @authorize({allowedRoles: [UserRole.ADMIN]}) 
+  @authorize({allowedRoles: [UserRole.ADMIN], voters: [basicAuthorization]}) 
   @response(204, {
     description: 'Pizza DELETE success',
   })

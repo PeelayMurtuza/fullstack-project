@@ -4,12 +4,14 @@ import {
   get,
   getModelSchemaRef,
   response,
+  HttpErrors,
 } from '@loopback/rest';
 import {Order, Pizza} from '../models';
 import {OrderRepository, PizzaRepository} from '../repositories';
 import {authenticate} from '@loopback/authentication';
 import {authorize} from '@loopback/authorization';
 import {UserRole} from '../models/user.model';
+import {basicAuthorization} from '../interceptors/authorize.interceptor'; 
 
 export class OrderPizzaController {
   constructor(
@@ -33,7 +35,7 @@ export class OrderPizzaController {
     },
   })
   @authenticate('jwt') // Require JWT authentication
-  @authorize({allowedRoles: [UserRole.ADMIN , UserRole.USER]}) // Allow both admins & users
+  @authorize({allowedRoles: [UserRole.ADMIN, UserRole.USER], voters: [basicAuthorization]}) // Apply authorization
   async getPizza(
     @param.path.number('id') id: typeof Order.prototype.id, // Order ID from the path
   ): Promise<Pizza> {
@@ -42,12 +44,10 @@ export class OrderPizzaController {
 
     // Ensure the order has a pizzaId to associate with a pizza
     if (!order.pizzaId) {
-      throw new Error('Order does not have an associated pizza');
+      throw new HttpErrors.NotFound('Order does not have an associated pizza');
     }
 
     // Retrieve the pizza using the pizzaId from the order
-    const pizza = await this.pizzaRepository.findById(order.pizzaId);
-
-    return pizza; // Return the pizza associated with the order
+    return this.pizzaRepository.findById(order.pizzaId);
   }
 }

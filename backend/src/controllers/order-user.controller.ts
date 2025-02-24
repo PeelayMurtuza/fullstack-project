@@ -4,12 +4,16 @@ import {
   get,
   getModelSchemaRef,
   response,
+  HttpErrors,
 } from '@loopback/rest';
 import {Order} from '../models';
 import {OrderRepository} from '../repositories';
 import {SecurityBindings, UserProfile} from '@loopback/security';
-import {inject} from '@loopback/core';  // Corrected import for inject
-import {authenticate} from '@loopback/authentication'; // Corrected import for authenticate
+import {inject} from '@loopback/core';
+import {authenticate} from '@loopback/authentication';
+import {authorize} from '@loopback/authorization';
+import {basicAuthorization} from '../interceptors/authorize.interceptor'; // Importing authorization interceptor
+import {UserRole} from '../models/user.model'; // Ensure you have UserRole defined
 
 export class OrderUserController {
   constructor(
@@ -19,6 +23,10 @@ export class OrderUserController {
 
   @get('/users/{userId}/orders')
   @authenticate('jwt') // Require authentication
+  @authorize({
+    allowedRoles: [UserRole.ADMIN, UserRole.USER], 
+    voters: [basicAuthorization], // Apply custom authorization logic
+  })
   @response(200, {
     description: 'Array of Orders placed by the user',
     content: {
@@ -31,14 +39,14 @@ export class OrderUserController {
     },
   })
   async findOrdersByUserId(
-    @param.path.number('userId') userId: number, // UserID from URL
-    @inject(SecurityBindings.USER) currentUserProfile: UserProfile, // Current user data from JWT
+    @param.path.number('userId') userId: number,
+    @inject(SecurityBindings.USER) currentUserProfile: UserProfile,
   ): Promise<Order[]> {
-    const currentUserId = currentUserProfile.id; // Getting the user ID from the authenticated JWT user
+    const currentUserId = currentUserProfile.id;
 
-    // If the current user is not an admin, they can only access their own orders
+    // Allow only admins or the order owner to access orders
     if (currentUserId !== userId && !this.isAdmin(currentUserProfile)) {
-      throw new Error('Unauthorized');
+      throw new HttpErrors.Forbidden('Unauthorized access');
     }
 
     return this.orderRepository.find({
@@ -48,6 +56,10 @@ export class OrderUserController {
 
   @get('/users/{userId}/orders/{orderId}')
   @authenticate('jwt') // Require authentication
+  @authorize({
+    allowedRoles: [UserRole.ADMIN, UserRole.USER], 
+    voters: [basicAuthorization], // Apply custom authorization logic
+  })
   @response(200, {
     description: 'Order by user with specific orderId',
     content: {
@@ -59,13 +71,13 @@ export class OrderUserController {
   async findOrderById(
     @param.path.number('userId') userId: number,
     @param.path.number('orderId') orderId: number,
-    @inject(SecurityBindings.USER) currentUserProfile: UserProfile, // Current user data from JWT
+    @inject(SecurityBindings.USER) currentUserProfile: UserProfile,
   ): Promise<Order> {
-    const currentUserId = currentUserProfile.id; // Getting the user ID from the authenticated JWT user
+    const currentUserId = currentUserProfile.id;
 
-    // If the current user is not an admin, they can only access their own orders
+    // Allow only admins or the order owner to access their specific order
     if (currentUserId !== userId && !this.isAdmin(currentUserProfile)) {
-      throw new Error('Unauthorized');
+      throw new HttpErrors.Forbidden('Unauthorized access');
     }
 
     const order = await this.orderRepository.findOne({
@@ -73,7 +85,7 @@ export class OrderUserController {
     });
 
     if (!order) {
-      throw new Error('Order not found');
+      throw new HttpErrors.NotFound('Order not found');
     }
 
     return order;
@@ -81,7 +93,6 @@ export class OrderUserController {
 
   // Helper method to check if the current user is an admin
   private isAdmin(currentUserProfile: UserProfile): boolean {
-    // Check if the user has an 'admin' role or any other method that you use to identify admins
-    return currentUserProfile.role === 'admin'; // Example check based on role
+    return currentUserProfile.role === UserRole.ADMIN;
   }
 }
